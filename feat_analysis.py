@@ -3,13 +3,12 @@ import pandas as pd
 
 import os
 from joblib import Memory
-from matplotlib import pyplot as plt
 from sklearn import metrics
 
 from sklearn.feature_selection import mutual_info_classif
 
-project_path = r"C:\Users\111\Documents\work\pyhton\"
-feat_table = pd.read_csv(proj_path + "features_table.csv", sep = "\t")
+project_path = r"C:\Users\111\Documents\work\pyhton\\"
+feat_table = pd.read_csv(project_path + "features_table.csv", sep = "\t")
 
 
 cashe_dir = os.path.join(project_path,r"cache")
@@ -76,3 +75,36 @@ def scp(ngram_range_tuple, ngram_table,column_position_dict, ngrams_positions, p
             for j in range(len(splt)-1):
                 fst_part = "||".join(splt[: j+1])
                 scnd_part = "||".join(splt[j+1:])
+
+                fst_ngram_prob = probability_table[ngrams_positions[fst_part]]
+                scnd_ngram_prob = probability_table[ngrams_positions[scnd_part]]
+
+                denominator += fst_ngram_prob*scnd_ngram_prob
+
+            denominator /= n-1
+            scp_value = probability_table[col]**2
+            scp_values[col] = scp_value
+
+    return scp_values
+
+def get_scp_table(prob_table, ngram_range_tuple, ngram_table, gram_frames, ngram_positions):
+    scp_table = scp(ngram_range_tuple,ngram_table, gram_frames, ngram_positions, np.array(prob_table).reshape(-1))
+    return scp_table
+
+def mutual_info_classification(feat_table, target_vec):
+    mi = mutual_info_classif(feat_table, target_vec)
+    column_names = feat_table.columns
+    mi_table = np.column_stack((column_names, mi))
+
+    return mi_table
+
+if __name__ == "__main__":
+    proj_path = project_path
+    all_counter = pd.read_excel(proj_path+"all_counter.xlsx")
+    all_table = pd.read_csv(proj_path + "all_table", sep = "\t")
+    mi_matrix = []
+
+    scp_table = get_scp_table((1,4),all_table,all_counter.ngrams_edges__,all_counter.vocabulary_)
+
+    scp_treshold = 0.004
+    scp_filter = np.array(scp_table)>scp_treshold
